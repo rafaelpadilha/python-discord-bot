@@ -8,7 +8,7 @@ config = {}
 
 TOKEN = os.environ.get("BOT_TOKEN")
 
-bot = commands.Bot(command_prefix='!')
+bot = commands.Bot(command_prefix='$')
 
 @bot.event
 async def on_ready():

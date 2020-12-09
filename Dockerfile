@@ -6,10 +6,7 @@ RUN apt-get update \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/* 
 
-
-
 # installing the application
-#WORKDIR /dist
 COPY . . 
 RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install -r requirements.txt
@@ -21,4 +18,4 @@ RUN python3 -m pip install -r requirements.txt
 #EXPOSE 80 443
 
 
-CMD ["python3 pydilha.py"]
+CMD ["python", "pydilha.py"]

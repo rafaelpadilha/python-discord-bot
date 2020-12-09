@@ -3,7 +3,8 @@ FROM python:3.8-slim-buster
 # upgrading img packages and installing packages to support the application
 RUN apt-get update \
 && apt-get clean \
-&& rm -rf /var/lib/apt/lists/*
+&& rm -rf /var/lib/apt/lists/* \
+&& apt-get install gcc
 
 
 # installing the application

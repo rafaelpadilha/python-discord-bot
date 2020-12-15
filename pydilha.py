@@ -5,7 +5,7 @@ from pickle import load, dump
 from urllib import request
 import os
 
-#TEMP
+# TEMP
 import json
 
 CFG_PATH = 'cfg/'
@@ -39,6 +39,7 @@ def load_cfg():
         save_cfg(config)
     return config
 
+
 @bot.event
 async def on_ready():
     global cfg
@@ -46,17 +47,17 @@ async def on_ready():
     cfg = load_cfg()
     for guild in bot.guilds:
         if guild not in cfg:
-            cfg[guild.id]={}
-            cfg[guild.id]["annoucements"]=True
-            cfg[guild.id]["sfx"]={}
+            cfg[guild.id] = {}
+            cfg[guild.id]["annoucements"] = True
+            cfg[guild.id]["sfx"] = {}
             save_cfg(cfg)
     print(json.dumps(cfg, indent=4))
 
-    
 
 @bot.command(pass_context=True)
 async def info(context):
     await context.message.channel.send(f"Versão atual: {__version__}\nCriador: Rafael Padilha")
+
 
 @bot.command(pass_context=True)
 async def help(context):
@@ -67,14 +68,20 @@ info: Informações gerais sobre o bot.
     ```"""
     await context.message.channel.send(help_text)
 
+
 @bot.command(pass_context=True)
-async def sfx(context, option, arg1=None ,arg2=None):
+async def sfx(context, option, arg1=None, arg2=None):
     global cfg
-    print(f"Option:{option}")
 
     if option == "add":
         if arg1 and arg2:
-            request.urlretrieve(arg2, SND_PATH + arg1 + '.mp3')
+            if arg1 not in cfg[context.guild.id]["sfx"]:
+                full_path = SND_PATH + arg1 + '.mp3'
+                request.urlretrieve(arg2, full_path)
+                cfg[context.guild.id]["sfx"][arg1] = full_path
+                await context.message.channel.send(f"Concluido!")
+            else:
+                await context.message.channel.send(f"Já tem esse, newba .-. \n ```sfx list```")
         else:
             await context.message.channel.send(f"Fala direito cmg >.< \n ```sfx add nome link_mp3```")
     elif option == "list":
@@ -90,7 +97,7 @@ async def sfx(context, option, arg1=None ,arg2=None):
         if option in cfg[context.guild.id]["sfx"]:
             if arg1:
                 pass
-                # TODO play cfg[context.guild.id]['sfx'][option] 
+                # TODO play cfg[context.guild.id]['sfx'][option]
             else:
                 await context.message.channel.send(f"Onde garai ? \n```sfx nome canal```")
         else:

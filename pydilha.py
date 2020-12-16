@@ -1,9 +1,13 @@
 from discord.ext import commands
+from discord import FFmpegPCMAudio
 from version import __version__
 from random import choice
 from pickle import load, dump
 from urllib import request
+from queue import Queue
+from asyncio import sleep
 import os
+
 
 # TEMP
 import json
@@ -14,11 +18,14 @@ TOKEN = os.environ.get("BOT_TOKEN")
 
 bot = commands.Bot(command_prefix='$', help_command=None)
 cfg = {}
+queue = {}
 
 
 def save_cfg(config):
+    print("Saving CFG file.")
     with open(CFG_PATH + 'settings.pickle', 'wb') as f:
         dump(config, f)
+    print("CFG file saved.")
 
 
 def load_cfg():
@@ -40,13 +47,37 @@ def load_cfg():
     return config
 
 
+async def play_sound(sound, channel):
+    global queue
+    if channel not in queue:
+        queue[channel] = Queue()
+        queue[channel].put(sound)
+        try:
+            voice_connection = await channel.connect()
+
+            while not queue[channel].empty():
+                cur_sound = queue[channel].get()
+                voice_connection.play(FFmpegPCMAudio(cur_sound))
+                while voice_connection.is_playing():
+                    await sleep(1)
+            voice_connection.stop()
+            await voice_connection.disconnect()
+            del queue[channel]
+
+        except Exception as e:
+            print(e)
+            await voice_connection.disconnect()
+    else:
+        queue[channel].put(sound)
+
+
 @bot.event
 async def on_ready():
     global cfg
     print("Ready!")
     cfg = load_cfg()
     for guild in bot.guilds:
-        if guild not in cfg:
+        if guild.id not in cfg:
             cfg[guild.id] = {}
             cfg[guild.id]["annoucements"] = True
             cfg[guild.id]["sfx"] = {}
@@ -79,6 +110,7 @@ async def sfx(context, option, arg1=None, arg2=None):
                 full_path = SND_PATH + arg1 + '.mp3'
                 request.urlretrieve(arg2, full_path)
                 cfg[context.guild.id]["sfx"][arg1] = full_path
+                save_cfg(cfg)
                 await context.message.channel.send(f"Concluido!")
             else:
                 await context.message.channel.send(f"Já tem esse, newba .-. \n ```sfx list```")
@@ -96,8 +128,13 @@ async def sfx(context, option, arg1=None, arg2=None):
     else:
         if option in cfg[context.guild.id]["sfx"]:
             if arg1:
-                pass
-                # TODO play cfg[context.guild.id]['sfx'][option]
+                vc = None
+                for voice_channel in context.guild.voice_channels:
+                    if voice_channel.name == arg1:
+                        vc = voice_channel
+                        await play_sound(cfg[context.guild.id]["sfx"][option], vc)
+                        break
+                    await context.message.channel.send(f"Canal não encontrado.")
             else:
                 await context.message.channel.send(f"Onde garai ? \n```sfx nome canal```")
         else:
